@@ -8,6 +8,9 @@ DeployPulse is a full-stack DevOps tracking system designed to monitor feature d
 
 This repository contains the Spring Boot backend, which exposes REST APIs consumed by the React frontend.
 
+Backend live demo:https://deploypulse-backend.onrender.com/api/features
+deployed using render.
+
 Architecture Overview
 ┌─────────────────────────────────────────────────────────────┐
 │                    Frontend (React App)                     │
