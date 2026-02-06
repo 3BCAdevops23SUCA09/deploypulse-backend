@@ -1,14 +1,22 @@
-# Use Java 21 runtime
+# ---------- STAGE 1: Build the JAR ----------
+FROM maven:3.9.6-eclipse-temurin-21 AS build
+
+WORKDIR /app
+
+# Copy everything
+COPY . .
+
+# Build Spring Boot app
+RUN mvn clean package -DskipTests
+
+# ---------- STAGE 2: Run the app ----------
 FROM eclipse-temurin:21-jdk
 
-# App jar name
-ARG JAR_FILE=target/backend-0.0.1-SNAPSHOT.jar
+WORKDIR /app
 
-# Copy jar into container
-COPY ${JAR_FILE} app.jar
+# Copy jar from build stage
+COPY --from=build /app/target/*.jar app.jar
 
-# Expose Spring Boot port
 EXPOSE 8080
 
-# Run app
-ENTRYPOINT ["java","-jar","/app.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
