@@ -144,43 +144,183 @@ docker build -t deploypulse-backend .
 Run Container
 docker run -d -p 8080:8080 --name deploypulse deploypulse-backend
 
-Challenges Faced & Solutions
-1. Port 8080 Already in Use
+sonar analysis done:
+<img width="1398" height="293" alt="image" src="https://github.com/user-attachments/assets/eda7a068-cbe8-4deb-b147-471e7e0a557c" />
 
-Issue: Docker container failed to start.
-Cause: Spring Boot app already running locally.
+⚠️ Challenges Faced & How They Were Solved (Backend)
+
+During the development, containerization, code analysis, and deployment of the DeployPulse Backend, multiple real-world engineering and DevOps challenges were encountered. Each issue helped strengthen understanding of backend systems, Docker, cloud deployment, and build pipelines.
+
+1️⃣ SonarCloud Analysis Showing “Not Computed”
+
+Issue:
+Even after running the SonarScanner command successfully, SonarCloud dashboard kept showing “Analysis Not Computed”.
+
+Cause:
+
+Incorrect organization key used initially
+
+Sonar project was created but not properly linked with GitHub
+
+Scan command was run incorrectly in Windows terminal (PowerShell split commands)
+
+Solution:
+
+Correct organization name was updated
+
+Proper SonarCloud token generated
+
+Correct command used in single line:
+
+mvn clean verify sonar:sonar \
+-Dsonar.projectKey=deploypulse-backend \
+-Dsonar.organization=<org> \
+-Dsonar.host.url=https://sonarcloud.io \
+-Dsonar.token=<token>
+
+
+This triggered the first successful scan, and Quality Gate appeared.
+
+2️⃣ Docker Not Recognized in Windows
+
+Issue:
+Running docker build returned:
+
+'docker' is not recognized as an internal or external command
+
+
+Cause:
+Docker Desktop was not installed and WSL2 was not enabled.
+
+Solution:
+
+Installed Docker Desktop for Windows (AMD64)
+
+Enabled WSL2
+
+Restarted system
+
+Verified installation:
+
+docker --version
+
+3️⃣ Docker Port Already in Use
+
+Issue:
+
+ports are not available: bind: Only one usage of each socket address
+
+
+Cause:
+Port 8080 was already used by another Java/Spring process.
+
 Solution:
 
 netstat -ano | findstr :8080
 taskkill /PID <PID> /F
 
-2. Docker Daemon Not Running
 
-Error:
+Then container ran successfully.
 
-failed to connect to dockerDesktopLinuxEngine
+4️⃣ Container Running but Browser Showing Whitelabel Error
 
+Issue:
+Clicking localhost:8080 opened Spring Boot error page.
 
-Cause: Docker Desktop not started.
-Fix: Start Docker Desktop before running containers.
+Cause:
+Backend does not have a UI root endpoint (/).
+Only REST APIs exist.
 
-3. White Label Error Page
-
-Cause: Visiting root URL / with no controller mapping.
-Fix: Use correct API endpoint:
+Solution:
+Access correct endpoint:
 
 http://localhost:8080/api/features
 
-4. H2 Console Link Confusion
+5️⃣ H2 Database Not Persisting in Docker
 
-Correct URL:
+Issue:
+Data disappeared when container restarted.
 
-http://localhost:8080/h2-console
+Cause:
+H2 was configured as in-memory database.
 
-sonar analysis done:
-<img width="1398" height="293" alt="image" src="https://github.com/user-attachments/assets/eda7a068-cbe8-4deb-b147-471e7e0a557c" />
+Solution:
+Understood limitation and accepted for development use.
+Future production upgrade → PostgreSQL/MySQL.
+
+6️⃣ Docker Build Failing on Render
+
+Issue:
+
+COPY target/backend-0.0.1-SNAPSHOT.jar not found
 
 
+Cause:
+Render Docker build environment does not run Maven automatically.
+
+Solution:
+Changed to multi-stage Dockerfile:
+
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY . .
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:21-jdk
+COPY --from=build /app/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+7️⃣ Git Push Rejected (Fetch First)
+
+Issue:
+
+! [rejected] main -> main (fetch first)
+
+
+Cause:
+Remote repo had files (README) not present locally.
+
+Solution:
+
+git pull origin main --rebase
+git push origin main
+
+8️⃣ CORS Errors When Connecting Frontend
+
+Issue:
+Frontend deployed on Vercel could not access backend API.
+
+Cause:
+Spring Boot blocks cross-origin requests by default.
+
+Solution:
+Added global CORS config:
+
+@Configuration
+public class CorsConfig implements WebMvcConfigurer {
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("*")
+                .allowedMethods("*");
+    }
+}
+
+9️⃣ Backend Deployment Differences (Local vs Cloud)
+
+Issue:
+Backend worked locally but failed on Render initially.
+
+Cause:
+Cloud platforms require:
+
+Correct Dockerfile
+
+Exposed ports
+
+Proper start command
+
+Solution:
+Adjusted Dockerfile and Render configuration. Backend deployed successfully.
 
 Known Limitations:
 
