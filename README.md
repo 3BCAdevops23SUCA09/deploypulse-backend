@@ -340,4 +340,8 @@ Deployment pipeline integration
 
 Cloud deployment
 
-#####This is for pull request checking
+#####This is for pull request checking 
+Project Presentation
+
+A detailed presentation explaining the project architecture, features, database design, and workflow is available below:
+ Presentation Slides: https://gamma.app/docs/DeployPulse-4ququwne28wn3wb?mode=doc
